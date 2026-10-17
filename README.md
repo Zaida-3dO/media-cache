@@ -37,20 +37,21 @@ A "hit" is a request answered from disk without an upstream fetch; the request t
 | `UPSTREAM_TIMEOUT_SECONDS` | 600 | |
 | `INDEX_FLUSH_SECONDS` | 30 | how often hit counters are written back to the index |
 
-Logs are JSON lines on stdout. Objects stream to disk; memory use does not grow with object size.
+Logs are JSON lines on stdout (a startup config error goes to stderr). Objects stream to disk; memory use does not grow with object size.
 If `x` is cached and `x/y.jpg` is later requested (or vice versa) the second answers 409: a file and a directory cannot share a name on disk.
 Pathnames that are empty, contain `..`/`.`/empty segments, NUL/control characters, backslashes, or start with `.`/`_` are rejected with 400.
 
 ## Run
 
 ```
-docker build -t media-cache .
 docker run -d --name media-cache -p 8080:8080 -v "$PWD/data:/data" \
   -e UPSTREAM_ORIGIN=https://<store-id>.public.blob.vercel-storage.com \
-  media-cache
+  ghcr.io/zaida-3do/media-cache:latest
 ```
 
-Or without Docker: `UPSTREAM_ORIGIN=... DATA_DIR=./data node src/main.mjs`.
+Images (`linux/amd64`, `linux/arm64`) are published by CI: `latest` is the tip of `main`, and every
+build is also tagged `sha-<commit>`. To build it yourself: `docker build -t media-cache .`. Without
+Docker: `UPSTREAM_ORIGIN=... DATA_DIR=./data node src/main.mjs`.
 
 Then point your non-public clients at the cache: `https://<store-id>.public.blob.vercel-storage.com/<pathname>`
 becomes `http://<cache-host>:8080/<pathname>`.
