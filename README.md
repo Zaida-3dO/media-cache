@@ -6,7 +6,7 @@ against your Blob transfer (admin panels, dev servers, previews, test runs) go t
 instead: served from disk if held, otherwise fetched from the store **once**, stored, and served.
 Blob paths are immutable, so files are kept forever and nothing is ever invalidated.
 
-No npm dependencies (Node 20+ built-ins). It is meant to run on a trusted network, not on the open
+No npm dependencies (Node 22+ built-ins). It is meant to run on a trusted network, not on the open
 internet.
 
 ## Endpoints
@@ -14,7 +14,7 @@ internet.
 | Request | Behaviour |
 |---|---|
 | `GET/HEAD /<pathname>` | Hit: served from disk (`Content-Type`, `Content-Length`, `ETag`, `Cache-Control: public, max-age=31536000, immutable`, `Accept-Ranges`). Miss: whole object fetched once from `${UPSTREAM_ORIGIN}/<pathname>`, written atomically, then served. Concurrent misses share one fetch. Range requests (206/416) are always answered from disk; ranges are never forwarded upstream. |
-| upstream 403/404 | Passed through with that status, never stored. 403/404 are remembered for `NEGATIVE_TTL_SECONDS` (60) so an outage is not hammered. Other upstream failures (5xx, redirects, network) give 502. |
+| upstream 4xx | Every upstream 4xx is passed through with its own status and never stored. Only 403 and 404 are remembered for `NEGATIVE_TTL_SECONDS` (60), so a missing object is not re-fetched on every request; other 4xx are asked again each time. Any other upstream failure (5xx, redirects, network errors) gives 502. |
 | `GET /_health` | `{"ok":true}` |
 | `GET /_stats` | (`Authorization: Bearer $STATS_TOKEN` if one is set; open otherwise) files, bytes, hits, upstream fetches, passthroughs, negative-cache hits, errors, `lastError` |
 | `POST /_prewarm` | `Authorization: Bearer $PREWARM_TOKEN`, body `{"paths":[...]}` (max 10000). Disabled (404) if no token is set. |
